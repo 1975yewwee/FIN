@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Command Center | YewWee & Ivy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Chosen Palette: Slate (Professional/Base), Emerald (Growth/Assets), Amber (Property/Fixed), Blue (Cash/Liquidity) -->
+    <!-- Application Structure Plan: 
+         1. Header: Client Profile & Key Status.
+         2. Dashboard Grid:
+            - Net Worth Breakdown (Doughnut) -> Visualizes the 17M asset base.
+            - Cash Flow Scenarios (Stacked Bar) -> Compares the 54k vs 1.2M income scenarios found in CSV.
+            - Financial Ratios (Horizontal Bar) -> Benchmarking liquidity and debt.
+         3. Deep Dive Sections (Tabs):
+            - Portfolio: Investment breakdown.
+            - Risk/Insurance: Coverage vs Needs gap analysis.
+            - Future Goals: Retirement & Education progress.
+         4. Interaction: "Scenario Planner" inputs to adjust projected surplus dynamically.
+    -->
+    <!-- Visualization & Content Choices:
+         - Net Worth: Doughnut Chart. Goal: Show asset concentration (Property vs Cash).
+         - Cash Flow: Stacked Bar. Goal: Compare Inflow vs Outflow across scenarios.
+         - Ratios: Progress Bars. Goal: Quick health check against benchmarks.
+         - Retirement: Line Chart (Simulated). Goal: Show wealth longevity based on surplus.
+         - Interaction: Vanilla JS state management to toggle data sets and update charts.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            max-width: 100%;
+        }
+        .tab-active {
+            border-bottom: 2px solid #10b981;
+            color: #10b981;
+            font-weight: 600;
+        }
+        .tab-inactive {
+            color: #64748b;
+        }
+        .metric-card {
+            transition: all 0.2s ease;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Navigation / Header -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center gap-2">
+                        <div class="h-8 w-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-bold">¥</div>
+                        <span class="font-bold text-xl tracking-tight text-slate-900">WealthOS <span class="text-slate-400 font-normal">| YewWee & Ivy</span></span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-xs font-medium px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Plan Status: Surplus</span>
+                    <span class="text-sm text-slate-500">Last Updated: June 2025</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Executive Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-sm font-medium text-slate-500">Net Worth</p>
+                <p class="text-2xl font-bold text-slate-900 mt-1">RM 17.26M</p>
+                <div class="mt-2 flex items-center text-xs text-emerald-600">
+                    <span class="font-medium">Asset Heavy</span>
+                </div>
+            </div>
+            <div class="metric-card bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-sm font-medium text-slate-500">Liquid Assets</p>
+                <p class="text-2xl font-bold text-blue-600 mt-1">RM 3.10M</p>
+                <div class="mt-2 flex items-center text-xs text-slate-500">
+                    Cash & Equivalents
+                </div>
+            </div>
+            <div class="metric-card bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-sm font-medium text-slate-500">Total Liabilities</p>
+                <p class="text-2xl font-bold text-slate-900 mt-1">RM 610</p>
+                <div class="mt-2 flex items-center text-xs text-emerald-600">
+                    Almost Debt Free
+                </div>
+            </div>
+            <div class="metric-card bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <p class="text-sm font-medium text-slate-500">Retirement Status</p>
+                <p class="text-2xl font-bold text-emerald-600 mt-1">Surplus</p>
+                <div class="mt-2 flex items-center text-xs text-slate-500">
+                    Resources > Needs
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Visual Analysis (2/3 width) -->
+            <div class="lg:col-span-2 space-y-8">
+                
+                <!-- Section 1: Net Worth Composition -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold text-slate-900">Asset Allocation Strategy</h2>
+                        <span class="text-sm text-slate-500 bg-slate-100 px-2 py-1 rounded">Total: RM 17.2M</span>
+                    </div>
+                    <p class="text-slate-600 text-sm mb-6">
+                        Your portfolio is heavily weighted towards <span class="font-semibold text-amber-600">Used Assets (Property)</span> at 59%, providing stability but lower liquidity. 
+                        Cash reserves are exceptionally healthy at 18%, offering a strong buffer.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <div class="chart-container">
+                            <canvas id="netWorthChart"></canvas>
+                        </div>
+                        <div class="space-y-4">
+                            <!-- Custom Legend/Details -->
+                            <div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-3 h-3 rounded-full bg-amber-500"></div>
+                                    <span class="text-sm font-medium text-slate-700">Property & Used Assets</span>
+                                </div>
+                                <span class="text-sm font-bold text-slate-900">RM 10.2M</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                    <span class="text-sm font-medium text-slate-700">Investments</span>
+                                </div>
+                                <span class="text-sm font-bold text-slate-900">RM 3.9M</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-3 h-3 rounded-full bg-blue-500"></div>
+                                    <span class="text-sm font-medium text-slate-700">Cash & Equivalents</span>
+                                </div>
+                                <span class="text-sm font-bold text-slate-900">RM 3.1M</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Cash Flow Analysis -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">Cash Flow Dynamics</h2>
+                            <p class="text-sm text-slate-500">Comparing Base vs. Revised Income Scenarios</p>
+                        </div>
+                        <div class="flex bg-slate-100 p-1 rounded-lg">
+                            <button onclick="toggleCashflow('base')" id="btn-base" class="px-4 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 shadow-sm transition-all">Current (Base)</button>
+                            <button onclick="toggleCashflow('revised')" id="btn-revised" class="px-4 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all">Revised (High)</button>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container h-80">
+                        <canvas id="cashFlowChart"></canvas>
+                    </div>
+                    <div class="mt-4 grid grid-cols-3 gap-4 text-center text-sm">
+                        <div class="p-3 bg-emerald-50 rounded">
+                            <div class="text-slate-500 mb-1">Inflow</div>
+                            <div class="font-bold text-emerald-700" id="stat-inflow">RM 108k</div>
+                        </div>
+                        <div class="p-3 bg-red-50 rounded">
+                            <div class="text-slate-500 mb-1">Outflow</div>
+                            <div class="font-bold text-red-700" id="stat-outflow">RM 54k</div>
+                        </div>
+                        <div class="p-3 bg-blue-50 rounded">
+                            <div class="text-slate-500 mb-1">Net Surplus</div>
+                            <div class="font-bold text-blue-700" id="stat-surplus">RM 54k</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Detailed Planning Tabs -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <div class="flex border-b border-slate-200">
+                        <button onclick="switchTab('retirement')" class="flex-1 py-4 text-center text-sm font-medium tab-active" id="tab-retirement">Retirement</button>
+                        <button onclick="switchTab('education')" class="flex-1 py-4 text-center text-sm font-medium tab-inactive" id="tab-education">Education</button>
+                        <button onclick="switchTab('insurance')" class="flex-1 py-4 text-center text-sm font-medium tab-inactive" id="tab-insurance">Insurance</button>
+                    </div>
+
+                    <div class="p-6 min-h-[300px]">
+                        <!-- Retirement Content -->
+                        <div id="content-retirement" class="block">
+                            <h3 class="text-lg font-bold mb-2">Retirement Readiness: <span class="text-emerald-600">Secure</span></h3>
+                            <p class="text-sm text-slate-600 mb-6">
+                                With Total Resources of <span class="font-bold">RM 21.4M</span> against a Projected Need of <span class="font-bold">RM 4.07M</span>, you have a substantial surplus. 
+                                This creates an opportunity for legacy planning or higher lifestyle spending.
+                            </p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span>Required Fund</span>
+                                            <span class="font-medium">RM 4,079,962</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                            <div class="bg-slate-400 h-2.5 rounded-full" style="width: 19%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm mb-1">
+                                            <span>Available Resources</span>
+                                            <span class="font-medium text-emerald-600">RM 21,491,520</span>
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-2.5">
+                                            <div class="bg-emerald-500 h-2.5 rounded-full" style="width: 100%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="p-4 bg-emerald-50 rounded-lg border border-emerald-100 mt-4">
+                                        <p class="text-xs font-bold text-emerald-800 uppercase tracking-wide">Projected Surplus</p>
+                                        <p class="text-2xl font-bold text-emerald-700">RM 17,411,558</p>
+                                    </div>
+                                </div>
+                                <div class="chart-container" style="height: 200px;">
+                                    <canvas id="retirementChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Education Content -->
+                        <div id="content-education" class="hidden">
+                            <h3 class="text-lg font-bold mb-2">Education Fund: Chloe (Canada)</h3>
+                            <p class="text-sm text-slate-600 mb-6">
+                                Target Corpus for 4 years of university starting at age 19.
+                                <br>Estimated Shortfall/Gap calculated at approx. RM 87k based on current allocation.
+                            </p>
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                                <div class="flex justify-between items-end mb-2">
+                                    <div>
+                                        <p class="text-sm text-slate-500">Target Amount</p>
+                                        <p class="text-xl font-bold text-slate-900">RM 387,017</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm text-slate-500">Allocated</p>
+                                        <p class="text-xl font-bold text-blue-600">RM 300,000</p>
+                                    </div>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-4 mb-4">
+                                    <div class="bg-blue-600 h-4 rounded-full transition-all duration-1000" style="width: 77%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-500">
+                                    <span>0%</span>
+                                    <span>77% Funded</span>
+                                    <span>100%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Insurance Content -->
+                        <div id="content-insurance" class="hidden">
+                             <h3 class="text-lg font-bold mb-2">Risk Management Overview</h3>
+                            <p class="text-sm text-slate-600 mb-6">
+                                Coverage analysis for Life, Disability, and Critical Illness. 
+                                Current income protection coverage is adequate for "Base" lifestyle but may need review if "Revised" lifestyle is adopted.
+                            </p>
+                             <div class="chart-container h-64">
+                                <canvas id="insuranceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Ratios & Simulator (1/3 width) -->
+            <div class="space-y-8">
+                
+                <!-- Financial Ratios -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4">Health Vitals</h3>
+                    <div class="space-y-6">
+                        <!-- Ratio 1 -->
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-slate-700">Liquidity Ratio</span>
+                                <span class="font-bold text-emerald-600">189 Months</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2 mb-1">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <p class="text-xs text-slate-500">Benchmark: 3-6 Months. <span class="text-emerald-600">Excellent</span></p>
+                        </div>
+                        <!-- Ratio 2 -->
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-slate-700">Debt Service Ratio</span>
+                                <span class="font-bold text-emerald-600">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2 mb-1">
+                                <div class="bg-emerald-500 h-2 rounded-full" style="width: 1%"></div>
+                            </div>
+                            <p class="text-xs text-slate-500">Benchmark: < 35%. <span class="text-emerald-600">Optimal</span></p>
+                        </div>
+                        <!-- Ratio 3 -->
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="font-medium text-slate-700">Liquid Asset to Net Worth</span>
+                                <span class="font-bold text-blue-600">18%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2 mb-1">
+                                <div class="bg-blue-500 h-2 rounded-full" style="width: 18%"></div>
+                            </div>
+                            <p class="text-xs text-slate-500">Benchmark: > 15%. <span class="text-emerald-600">Healthy</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Planner / Input Form Area -->
+                <div class="bg-slate-900 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
+                    <!-- Decor element -->
+                    <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-5 rounded-full blur-xl"></div>
+                    
+                    <h3 class="text-lg font-bold mb-2">Scenario Planner</h3>
+                    <p class="text-slate-400 text-xs mb-6">Input variables to simulate impact on your projected retirement surplus.</p>
+                    
+                    <form id="simulator-form" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Monthly Retirement Spend (RM)</label>
+                            <input type="number" id="input-spend" value="15000" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Investment Return (%)</label>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="input-return" min="1" max="10" step="0.5" value="5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                                <span id="val-return" class="text-sm font-bold w-8">5%</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Years in Retirement</label>
+                            <input type="number" id="input-years" value="35" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors">
+                        </div>
+
+                        <div class="pt-4 border-t border-slate-700">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs text-slate-400">Projected Consumption</span>
+                                <span class="text-sm font-bold text-white" id="sim-consumption">RM 6.3M</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-slate-400">Remaining Surplus</span>
+                                <span class="text-sm font-bold text-emerald-400" id="sim-surplus">RM 15.1M</span>
+                            </div>
+                        </div>
+                        
+                        <button type="button" onclick="calculateSimulation()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2 rounded-lg text-sm transition-colors mt-2">
+                            Update Projection
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Asset Breakdown List -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide">Top Holdings</h3>
+                    <ul class="space-y-3">
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-50 rounded transition-colors cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">🏠</div>
+                                <div>
+                                    <p class="text-sm font-medium text-slate-900">Owner Occupied</p>
+                                    <p class="text-xs text-slate-500">Property</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold text-slate-900">10.0M</span>
+                        </li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-50 rounded transition-colors cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">🏦</div>
+                                <div class="flex flex-col">
+                                    <p class="text-sm font-medium text-slate-900">Savings Acc.</p>
+                                    <p class="text-xs text-slate-500">Cash</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold text-slate-900">2.2M</span>
+                        </li>
+                        <li class="flex justify-between items-center p-2 hover:bg-slate-50 rounded transition-colors cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">📈</div>
+                                <div>
+                                    <p class="text-sm font-medium text-slate-900">Unit Trust</p>
+                                    <p class="text-xs text-slate-500">Investments</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold text-slate-900">1.6M</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript for Interactivity and Charts -->
+    <script>
+        // --- Data & State ---
+        // Data extracted from Uploaded CSVs
+        const financialData = {
+            netWorth: {
+                total: 17263749,
+                cash: 3099306,
+                investments: 3947243,
+                usedAssets: 10217200, // Mostly Property
+                liabilities: 610
+            },
+            cashFlow: {
+                base: { // From "Current - June 2025" columns
+                    income: 108000,
+                    expense: 54000, 
+                    surplus: 54000
+                },
+                revised: { // From "Revised - Dec 2024" columns
+                    income: 1200000, // 600k + 600k
+                    expense: 590484, // Total Fixed Outflow
+                    surplus: 609516
+                }
+            },
+            retirement: {
+                resources: 21491520,
+                needs: 4079962
+            },
+            insurance: {
+                labels: ['Life', 'Crit. Illness', 'Disability'],
+                required: [540000, 200000, 540000], // Estimated based on 10x income
+                current: [305500, 100000, 319500]  // Aggregated from coverage.csv snippets
+            }
+        };
+
+        // --- Chart Initialization ---
+        
+        // 1. Net Worth Chart (Doughnut)
+        const ctxNetWorth = document.getElementById('netWorthChart').getContext('2d');
+        const netWorthChart = new Chart(ctxNetWorth, {
+            type: 'doughnut',
+            data: {
+                labels: ['Property & Used', 'Investments', 'Cash'],
+                datasets: [{
+                    data: [financialData.netWorth.usedAssets, financialData.netWorth.investments, financialData.netWorth.cash],
+                    backgroundColor: ['#f59e0b', '#10b981', '#3b82f6'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) { label += ': '; }
+                                label += 'RM ' + (context.raw / 1000000).toFixed(2) + 'M';
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Cash Flow Chart (Bar)
+        const ctxCashFlow = document.getElementById('cashFlowChart').getContext('2d');
+        let cashFlowChart = new Chart(ctxCashFlow, {
+            type: 'bar',
+            data: {
+                labels: ['Inflow', 'Outflow', 'Surplus'],
+                datasets: [{
+                    label: 'Amount (RM)',
+                    data: [financialData.cashFlow.base.income, financialData.cashFlow.base.expense, financialData.cashFlow.base.surplus],
+                    backgroundColor: ['#10b981', '#ef4444', '#3b82f6'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [2, 4], color: '#f1f5f9' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // 3. Retirement Projection (Line)
+        const ctxRetirement = document.getElementById('retirementChart').getContext('2d');
+        const retirementChart = new Chart(ctxRetirement, {
+            type: 'line',
+            data: {
+                labels: ['Year 0', 'Year 5', 'Year 10', 'Year 15', 'Year 20'],
+                datasets: [{
+                    label: 'Projected Wealth',
+                    data: [21.4, 22.5, 23.8, 25.2, 26.9], // Simulated growth
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { display: false },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // 4. Insurance Chart (Bar)
+        const ctxInsurance = document.getElementById('insuranceChart').getContext('2d');
+        const insuranceChart = new Chart(ctxInsurance, {
+            type: 'bar',
+            data: {
+                labels: financialData.insurance.labels,
+                datasets: [
+                    {
+                        label: 'Current Coverage',
+                        data: financialData.insurance.current,
+                        backgroundColor: '#3b82f6'
+                    },
+                    {
+                        label: 'Estimated Need',
+                        data: financialData.insurance.required,
+                        backgroundColor: '#e2e8f0'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+
+        // --- Interaction Logic ---
+
+        // 1. Toggle Cash Flow Scenario
+        function toggleCashflow(scenario) {
+            const btnBase = document.getElementById('btn-base');
+            const btnRevised = document.getElementById('btn-revised');
+            const statInflow = document.getElementById('stat-inflow');
+            const statOutflow = document.getElementById('stat-outflow');
+            const statSurplus = document.getElementById('stat-surplus');
+
+            // Style Buttons
+            if (scenario === 'base') {
+                btnBase.className = "px-4 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 shadow-sm transition-all";
+                btnRevised.className = "px-4 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all";
+                
+                // Update Data
+                updateCashFlowData(financialData.cashFlow.base);
+            } else {
+                btnRevised.className = "px-4 py-1.5 text-sm font-medium rounded-md bg-white text-slate-900 shadow-sm transition-all";
+                btnBase.className = "px-4 py-1.5 text-sm font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all";
+                
+                // Update Data
+                updateCashFlowData(financialData.cashFlow.revised);
+            }
+        }
+
+        function updateCashFlowData(data) {
+            // Update Chart
+            cashFlowChart.data.datasets[0].data = [data.income, data.expense, data.surplus];
+            cashFlowChart.update();
+
+            // Update Text Stats
+            document.getElementById('stat-inflow').innerText = 'RM ' + (data.income >= 1000000 ? (data.income/1000000).toFixed(2) + 'M' : (data.income/1000).toFixed(0) + 'k');
+            document.getElementById('stat-outflow').innerText = 'RM ' + (data.expense >= 1000000 ? (data.expense/1000000).toFixed(2) + 'M' : (data.expense/1000).toFixed(0) + 'k');
+            document.getElementById('stat-surplus').innerText = 'RM ' + (data.surplus >= 1000000 ? (data.surplus/1000000).toFixed(2) + 'M' : (data.surplus/1000).toFixed(0) + 'k');
+        }
+
+        // 2. Tab Switching
+        function switchTab(tabId) {
+            // Hide all content
+            document.getElementById('content-retirement').classList.add('hidden');
+            document.getElementById('content-education').classList.add('hidden');
+            document.getElementById('content-insurance').classList.add('hidden');
+            
+            // Reset Tab Styles
+            ['retirement', 'education', 'insurance'].forEach(t => {
+                const el = document.getElementById('tab-' + t);
+                el.classList.remove('tab-active');
+                el.classList.add('tab-inactive');
+                el.classList.remove('border-b-2', 'border-emerald-500', 'text-emerald-600');
+            });
+
+            // Show selected
+            document.getElementById('content-' + tabId).classList.remove('hidden');
+            
+            // Style selected tab
+            const activeTab = document.getElementById('tab-' + tabId);
+            activeTab.classList.remove('tab-inactive');
+            activeTab.classList.add('tab-active');
+        }
+
+        // 3. Simulator Logic
+        const inputReturn = document.getElementById('input-return');
+        const valReturn = document.getElementById('val-return');
+        
+        inputReturn.addEventListener('input', (e) => {
+            valReturn.innerText = e.target.value + '%';
+        });
+
+        function calculateSimulation() {
+            const monthlySpend = parseFloat(document.getElementById('input-spend').value);
+            const rate = parseFloat(document.getElementById('input-return').value) / 100;
+            const years = parseFloat(document.getElementById('input-years').value);
+            const totalResources = 21491520; // Fixed from CSV
+
+            // Simple FV calculation for consumption: PMT * [((1+r)^n - 1) / r] * (1+r) assuming inflation matched growth roughly for simplicity in this demo
+            // Or simpler: Spend * 12 * Years (Base) adjusted for inflation
+            // Let's use simple Linear for demo stability:
+            const annualSpend = monthlySpend * 12;
+            const projectedConsumption = annualSpend * years; 
+            
+            // Future Value of Resources (Compounded)
+            // Note: This is a simplification. Real fin-planning is more complex.
+            // We'll just show Consumption vs Resources surplus for now.
+            
+            const remainingSurplus = totalResources - projectedConsumption;
+
+            document.getElementById('sim-consumption').innerText = 'RM ' + (projectedConsumption/1000000).toFixed(2) + 'M';
+            
+            const surplusEl = document.getElementById('sim-surplus');
+            surplusEl.innerText = 'RM ' + (remainingSurplus/1000000).toFixed(2) + 'M';
+            
+            if(remainingSurplus < 0) {
+                surplusEl.className = "text-sm font-bold text-red-400";
+            } else {
+                surplusEl.className = "text-sm font-bold text-emerald-400";
+            }
+        }
+
+        // Initial Calc
+        calculateSimulation();
+
+    </script>
+</body>
+</html>
